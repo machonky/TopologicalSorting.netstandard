@@ -33,6 +33,13 @@ namespace TopologicalSorting
             return predecessor;
         }
 
+        public static OrderedProcess<T> After<T>(this IEnumerable<OrderedProcess<T>> followers, OrderedProcess<T> predecessor)
+        {
+            predecessor.Before(followers);
+
+            return predecessor;
+        }
+
         /// <summary>
         /// Indicates that all members of the enumerable must happen after all the predecessors
         /// </summary>
@@ -44,6 +51,11 @@ namespace TopologicalSorting
             return After(followers, predecessors as IEnumerable<OrderedProcess>);
         }
 
+        public static IEnumerable<OrderedProcess<T>> After<T>(this IEnumerable<OrderedProcess<T>> followers, params OrderedProcess<T>[] predecessors)
+        {
+            return After(followers, predecessors as IEnumerable<OrderedProcess<T>>);
+        }
+
         /// <summary>
         /// Indicates that all members of the enumerable must happen after all the predecessors
         /// </summary>
@@ -51,6 +63,14 @@ namespace TopologicalSorting
         /// <param name="predecessors">The predecessors.</param>
         /// <returns>the predecessors</returns>
         public static IEnumerable<OrderedProcess> After(this IEnumerable<OrderedProcess> followers, IEnumerable<OrderedProcess> predecessors)
+        {
+            foreach (var predecessor in predecessors)
+                predecessor.Before(followers);
+
+            return predecessors;
+        }
+
+        public static IEnumerable<OrderedProcess<T>> After<T>(this IEnumerable<OrderedProcess<T>> followers, IEnumerable<OrderedProcess<T>> predecessors)
         {
             foreach (var predecessor in predecessors)
                 predecessor.Before(followers);
@@ -71,6 +91,13 @@ namespace TopologicalSorting
             return follower;
         }
 
+        public static OrderedProcess<T> Before<T>(this IEnumerable<OrderedProcess<T>> predecessors, OrderedProcess<T> follower)
+        {
+            follower.After(predecessors);
+
+            return follower;
+        }
+
         /// <summary>
         /// Indicates that all members of the enumerable must happen before all the followers
         /// </summary>
@@ -82,6 +109,11 @@ namespace TopologicalSorting
             return Before(predecessors, followers as IEnumerable<OrderedProcess>);
         }
 
+        public static IEnumerable<OrderedProcess<T>> Before<T>(this IEnumerable<OrderedProcess<T>> predecessors, params OrderedProcess<T>[] followers)
+        {
+            return Before(predecessors, followers as IEnumerable<OrderedProcess<T>>);
+        }
+
         /// <summary>
         /// Indicates that all members of the enumerable must happen before all the followers
         /// </summary>
@@ -89,6 +121,14 @@ namespace TopologicalSorting
         /// <param name="followers">The followers.</param>
         /// <returns>the followers</returns>
         public static IEnumerable<OrderedProcess> Before(this IEnumerable<OrderedProcess> predecessors, IEnumerable<OrderedProcess> followers)
+        {
+            foreach (var follower in followers)
+                follower.After(predecessors);
+
+            return followers;
+        }
+
+        public static IEnumerable<OrderedProcess<T>> Before<T>(this IEnumerable<OrderedProcess<T>> predecessors, IEnumerable<OrderedProcess<T>> followers)
         {
             foreach (var follower in followers)
                 follower.After(predecessors);

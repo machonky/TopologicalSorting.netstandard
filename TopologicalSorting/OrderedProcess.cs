@@ -182,4 +182,184 @@ namespace TopologicalSorting
             return "Process { " + Name + " }";
         }
     }
+    /// <summary>
+    /// A process that requires execution, a process depends upon other processes being executed first, and the resources it uses not being consumed at the same time
+    /// </summary>
+    public class OrderedProcess<T>
+    {
+        #region fields
+        /// <summary>
+        /// The value of this process
+        /// </summary>
+        public readonly T Value;
+        /// <summary>
+        /// The graph this process is part of
+        /// </summary>
+        public readonly DependencyGraph<T> Graph;
+
+        private readonly HashSet<OrderedProcess<T>> _predecessors = new HashSet<OrderedProcess<T>>();
+        /// <summary>
+        /// Gets the predecessors of this process
+        /// </summary>
+        /// <value>The predecessors.</value>
+        public IEnumerable<OrderedProcess<T>> Predecessors
+        {
+            get
+            {
+                return _predecessors;
+            }
+        }
+
+        private readonly HashSet<OrderedProcess<T>> _followers = new HashSet<OrderedProcess<T>>();
+        /// <summary>
+        /// Gets the followers of this process
+        /// </summary>
+        public IEnumerable<OrderedProcess<T>> Followers
+        {
+            get
+            {
+                return _followers;
+            }
+        }
+
+        private readonly HashSet<Resource<T>> _resources = new HashSet<Resource<T>>();
+        /// <summary>
+        /// Gets the resources this process depends upon
+        /// </summary>
+        /// <value>The resources.</value>
+        public IEnumerable<Resource<T>> Resources
+        {
+            get
+            {
+                return _resources;
+            }
+        }
+        internal ISet<Resource<T>> ResourcesSet
+        {
+            get
+            {
+                return _resources;
+            }
+        }
+        #endregion
+
+        #region constructor
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OrderedProcess"/> class.
+        /// </summary>
+        /// <param name="graph">The graph which this process is part of</param>
+        /// <param name="name">The name of this process</param>
+        public OrderedProcess(DependencyGraph<T> graph, T value)
+        {
+            Graph = graph;
+            Value = value;
+
+            Graph.Add(this);
+        }
+        #endregion
+
+        #region ordering constraints
+        /// <summary>
+        /// Indicates that this process should execute before another
+        /// </summary>
+        /// <param name="follower">The ancestor.</param>
+        /// <returns>returns this process</returns>
+        public OrderedProcess<T> Before(OrderedProcess<T> follower)
+        {
+            DependencyGraph<T>.CheckGraph(this, follower);
+
+            if (_followers.Add(follower))
+                follower.After(this);
+
+            return follower;
+        }
+
+        /// <summary>
+        /// Indicates that this process must happen before all the followers
+        /// </summary>
+        /// <param name="followers">The followers.</param>
+        /// <returns>the followers</returns>
+        public IEnumerable<OrderedProcess<T>> Before(params OrderedProcess<T>[] followers)
+        {
+            return Before(followers as IEnumerable<OrderedProcess<T>>);
+        }
+
+        /// <summary>
+        /// Indicates that this process must happen before all the followers
+        /// </summary>
+        /// <param name="followers">The followers.</param>
+        /// <returns>the followers</returns>
+        public IEnumerable<OrderedProcess<T>> Before(IEnumerable<OrderedProcess<T>> followers)
+        {
+            foreach (var ancestor in followers)
+                Before(ancestor);
+
+            return followers;
+        }
+
+        /// <summary>
+        /// Indicates that this process should execute after another
+        /// </summary>
+        /// <param name="predecessor">The predecessor.</param>
+        /// <returns>returns this process</returns>
+        public OrderedProcess<T> After(OrderedProcess<T> predecessor)
+        {
+            DependencyGraph<T>.CheckGraph(this, predecessor);
+
+            if (_predecessors.Add(predecessor))
+                predecessor.Before(this);
+
+            return predecessor;
+        }
+
+        /// <summary>
+        /// Indicates that this process must happen after all the predecessors
+        /// </summary>
+        /// <param name="predecessors">The predecessors.</param>
+        /// <returns>the predecessors</returns>
+        public IEnumerable<OrderedProcess<T>> After(params OrderedProcess<T>[] predecessors)
+        {
+            return After(predecessors as IEnumerable<OrderedProcess<T>>);
+        }
+
+        /// <summary>
+        /// Indicates that this process must happen after all the predecessors
+        /// </summary>
+        /// <param name="predecessors">The predecessors.</param>
+        /// <returns>the predecessors</returns>
+        public IEnumerable<OrderedProcess<T>> After(IEnumerable<OrderedProcess<T>> predecessors)
+        {
+            foreach (var predecessor in predecessors)
+                After(predecessor);
+
+            return predecessors;
+        }
+        #endregion
+
+        #region resource constraints
+        /// <summary>
+        /// Indicates that this process requires the specified resource.
+        /// </summary>
+        /// <param name="resource">The resource.</param>
+        /// <returns>returns this process</returns>
+        public void Requires(Resource<T> resource)
+        {
+            DependencyGraph<T>.CheckGraph(resource, this);
+
+            if (_resources.Add(resource))
+                resource.UsedBy(this);
+        }
+        #endregion
+
+        /// <summary>
+        /// Returns a <see cref="System.String"/> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String"/> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return "Process { " + Value + " }";
+        }
+    }
 }
